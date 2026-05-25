@@ -12,10 +12,10 @@ export default function PersonalDetailsPage() {
       <div className="space-y-6 mt-4">
         <Card>
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
-              <span className="text-[10px] text-emerald-400">&#10003;</span>
+            <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+              <span className="text-[10px] text-emerald-600">&#10003;</span>
             </div>
-            <span className="text-xs text-emerald-400">Auto-filled from MOSL account</span>
+            <span className="text-xs text-emerald-600">Auto-filled from MOSL account</span>
           </div>
           <div className="space-y-3">
             <Input label="Full Name" value={personalDetails.fullName} onChange={(e) => setPersonalDetails({ fullName: e.target.value })} />
@@ -36,7 +36,7 @@ export default function PersonalDetailsPage() {
         </Card>
 
         <Card>
-          <div className="text-xs text-white/50 uppercase tracking-wider mb-4">Address</div>
+          <div className="text-xs text-mo-muted uppercase tracking-wider mb-4">Address</div>
           <div className="space-y-3">
             <Input label="Address" value={personalDetails.address} onChange={(e) => setPersonalDetails({ address: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
@@ -48,7 +48,7 @@ export default function PersonalDetailsPage() {
         </Card>
 
         <Card>
-          <div className="text-xs text-white/50 uppercase tracking-wider mb-4">Occupation & Income</div>
+          <div className="text-xs text-mo-muted uppercase tracking-wider mb-4">Occupation & Income</div>
           <div className="space-y-3">
             <Select label="Occupation" value={personalDetails.occupation} onChange={(e) => setPersonalDetails({ occupation: e.target.value })}>
               <option value="Salaried">Salaried</option>
@@ -69,7 +69,7 @@ export default function PersonalDetailsPage() {
         </Card>
 
         <Card>
-          <div className="text-xs text-white/50 uppercase tracking-wider mb-4">Nominee Details</div>
+          <div className="text-xs text-mo-muted uppercase tracking-wider mb-4">Nominee Details</div>
           <div className="space-y-3">
             <Input label="Nominee Name" value={nominee.name} placeholder="Enter nominee name" onChange={(e) => setNominee({ name: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
