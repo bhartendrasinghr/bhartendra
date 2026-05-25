@@ -33,7 +33,7 @@ export default function ConfigureFD() {
     >
       <div className="space-y-6 mt-4">
         <div>
-          <label className="text-xs text-white/50 mb-2 block">Investment Amount</label>
+          <label className="text-xs text-mo-muted mb-2 block">Investment Amount</label>
           <div className="flex flex-wrap gap-2 mb-3">
             {PRESET_AMOUNTS.map((a) => (
               <button
@@ -41,8 +41,8 @@ export default function ConfigureFD() {
                 onClick={() => setFDConfig({ amount: a })}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   fdConfig.amount === a
-                    ? "bg-emerald-400/20 text-emerald-400 border border-emerald-400/30"
-                    : "bg-white/[0.06] text-white/60 border border-white/10 hover:bg-white/10"
+                    ? "bg-mo-navy text-white"
+                    : "bg-white text-mo-muted border border-gray-200 hover:border-mo-navy/30"
                 }`}
               >
                 {formatCurrency(a)}
@@ -50,16 +50,16 @@ export default function ConfigureFD() {
             ))}
           </div>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">&#8377;</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-mo-muted text-sm">&#8377;</span>
             <input
               type="number"
               value={fdConfig.amount}
               onChange={(e) => setFDConfig({ amount: Math.max(minAmount, Number(e.target.value)) })}
               min={minAmount}
-              className="w-full bg-white/[0.06] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-400/50 transition"
+              className="w-full bg-mo-bg border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm text-mo-text focus:outline-none focus:border-mo-navy focus:ring-2 focus:ring-mo-navy/10 transition"
             />
           </div>
-          <div className="text-[10px] text-white/30 mt-1">Min: {formatCurrency(minAmount)}</div>
+          <div className="text-[10px] text-gray-400 mt-1">Min: {formatCurrency(minAmount)}</div>
         </div>
 
         <Select label="Tenure" value={fdConfig.tenure} onChange={(e) => setFDConfig({ tenure: Number(e.target.value) })}>
@@ -71,7 +71,7 @@ export default function ConfigureFD() {
         </Select>
 
         <div>
-          <label className="text-xs text-white/50 mb-2 block">Deposit Type</label>
+          <label className="text-xs text-mo-muted mb-2 block">Deposit Type</label>
           <div className="grid grid-cols-2 gap-2">
             {(["cumulative", "non-cumulative"] as const).map((t) => (
               <button
@@ -79,12 +79,12 @@ export default function ConfigureFD() {
                 onClick={() => setFDConfig({ depositType: t })}
                 className={`p-3 rounded-xl border text-xs font-medium transition ${
                   fdConfig.depositType === t
-                    ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"
+                    ? "border-mo-navy bg-mo-navy/5 text-mo-navy"
+                    : "border-gray-200 bg-white text-mo-muted hover:border-mo-navy/30"
                 }`}
               >
                 <div className="font-semibold">{t === "cumulative" ? "Cumulative" : "Non-Cumulative"}</div>
-                <div className="text-[10px] text-white/30 mt-0.5">
+                <div className="text-[10px] text-gray-400 mt-0.5">
                   {t === "cumulative" ? "Lumpsum at maturity" : "Periodic interest payout"}
                 </div>
               </button>
@@ -106,39 +106,39 @@ export default function ConfigureFD() {
         )}
 
         <div>
-          <label className="text-xs text-white/50 mb-2 block">Auto-Renewal</label>
+          <label className="text-xs text-mo-muted mb-2 block">Auto-Renewal</label>
           <button
             onClick={() => setFDConfig({ autoRenew: !fdConfig.autoRenew })}
-            className="flex items-center gap-3 w-full p-3 rounded-xl border border-white/10 bg-white/[0.04]"
+            className="flex items-center gap-3 w-full p-3 rounded-xl border border-gray-200 bg-white"
           >
-            <div className={`w-10 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5 ${fdConfig.autoRenew ? "bg-emerald-500" : "bg-white/20"}`}>
+            <div className={`w-10 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5 ${fdConfig.autoRenew ? "bg-mo-navy" : "bg-gray-300"}`}>
               <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${fdConfig.autoRenew ? "translate-x-4" : "translate-x-0"}`} />
             </div>
             <div className="text-left">
-              <div className="text-xs font-medium">{fdConfig.autoRenew ? "Enabled" : "Disabled"}</div>
-              <div className="text-[10px] text-white/30">Auto-renew on maturity</div>
+              <div className="text-xs font-medium text-mo-text">{fdConfig.autoRenew ? "Enabled" : "Disabled"}</div>
+              <div className="text-[10px] text-gray-400">Auto-renew on maturity</div>
             </div>
           </button>
         </div>
 
-        <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-600/5 border-emerald-400/20">
-          <div className="text-xs text-white/50 mb-3 uppercase tracking-wider">Returns Summary</div>
+        <Card className="bg-gradient-to-br from-mo-navy to-mo-navy-light border-0">
+          <div className="text-xs text-white/70 mb-3 uppercase tracking-wider">Returns Summary</div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-[10px] text-white/30">Invested</div>
-              <div className="text-lg font-bold">{formatCurrency(fdConfig.amount)}</div>
+              <div className="text-[10px] text-white/50">Invested</div>
+              <div className="text-lg font-bold text-white">{formatCurrency(fdConfig.amount)}</div>
             </div>
             <div>
-              <div className="text-[10px] text-white/30">At Maturity</div>
-              <div className="text-lg font-bold text-emerald-400">{formatCurrency(fdConfig.maturityAmount)}</div>
+              <div className="text-[10px] text-white/50">At Maturity</div>
+              <div className="text-lg font-bold text-mo-gold">{formatCurrency(fdConfig.maturityAmount)}</div>
             </div>
             <div>
-              <div className="text-[10px] text-white/30">Interest Earned</div>
-              <div className="text-sm font-semibold text-emerald-400">{formatCurrency(fdConfig.totalInterest)}</div>
+              <div className="text-[10px] text-white/50">Interest Earned</div>
+              <div className="text-sm font-semibold text-mo-gold">{formatCurrency(fdConfig.totalInterest)}</div>
             </div>
             <div>
-              <div className="text-[10px] text-white/30">Interest Rate</div>
-              <div className="text-sm font-semibold">{fdConfig.rate}% p.a.</div>
+              <div className="text-[10px] text-white/50">Interest Rate</div>
+              <div className="text-sm font-semibold text-white">{fdConfig.rate}% p.a.</div>
             </div>
           </div>
         </Card>
