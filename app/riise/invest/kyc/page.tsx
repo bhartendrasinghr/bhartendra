@@ -76,14 +76,14 @@ export default function KYCPage() {
         {step === "checking" && (
           <Card>
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-4">
-                <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-mo-navy/10 border border-mo-navy/20 flex items-center justify-center mb-4">
+                <div className="w-8 h-8 border-2 border-mo-navy/30 border-t-mo-navy rounded-full animate-spin" />
               </div>
-              <div className="text-sm font-medium mb-2">Checking your KYC status...</div>
-              <div className="text-xs text-white/40 mb-4">Verifying with {partner === "bajaj" ? "CERSAI" : "CKYC"} records</div>
-              <div className="w-48 mx-auto h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div className="text-sm font-medium text-mo-navy mb-2">Checking your KYC status...</div>
+              <div className="text-xs text-mo-muted mb-4">Verifying with {partner === "bajaj" ? "CERSAI" : "CKYC"} records</div>
+              <div className="w-48 mx-auto h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-400 rounded-full transition-all duration-300"
+                  className="h-full bg-mo-navy rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -93,14 +93,14 @@ export default function KYCPage() {
 
         {step === "method" && (
           <>
-            <Card className="mb-4 border-amber-400/20 bg-amber-400/5">
+            <Card className="mb-4 border-mo-gold/30 bg-mo-gold/5">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-amber-400 text-xs">!</span>
+                <div className="w-8 h-8 rounded-full bg-mo-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-mo-gold-dark text-xs">!</span>
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-amber-400">KYC Required</div>
-                  <div className="text-xs text-white/40 mt-0.5">
+                  <div className="text-xs font-medium text-mo-gold-dark">KYC Required</div>
+                  <div className="text-xs text-mo-muted mt-0.5">
                     {partner === "bajaj"
                       ? "Bajaj Finserv requires fresh KYC verification as per RBI guidelines."
                       : "Shriram Finance requires CKYC verification for FD booking."}
@@ -108,21 +108,19 @@ export default function KYCPage() {
                 </div>
               </div>
             </Card>
-            <div className="text-xs text-white/50 mb-3">Choose verification method</div>
+            <div className="text-xs text-mo-muted mb-3">Choose verification method</div>
             <div className="space-y-2">
               {methods.map((m) => (
-                <Card key={m.id} onClick={() => handleMethodSelect(m.id)} className="hover:border-emerald-400/30">
+                <Card key={m.id} onClick={() => handleMethodSelect(m.id)} className="hover:border-mo-navy/30">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                      partner === "bajaj" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                    }`}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-mo-navy/10 text-mo-navy border border-mo-navy/20">
                       {m.icon}
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium">{m.label}</div>
-                      <div className="text-[11px] text-white/40">{m.desc}</div>
+                      <div className="text-sm font-medium text-mo-navy">{m.label}</div>
+                      <div className="text-[11px] text-mo-muted">{m.desc}</div>
                     </div>
-                    <svg className="w-4 h-4 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -135,11 +133,11 @@ export default function KYCPage() {
         {step === "otp" && (
           <Card>
             <div className="text-center py-4">
-              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-mo-navy/10 border border-mo-navy/20 flex items-center justify-center mb-4">
                 <span className="text-2xl">&#128274;</span>
               </div>
-              <div className="text-sm font-medium mb-1">Enter OTP</div>
-              <div className="text-xs text-white/40 mb-6">
+              <div className="text-sm font-medium text-mo-navy mb-1">Enter OTP</div>
+              <div className="text-xs text-mo-muted mb-6">
                 {method === "ckyc"
                   ? `OTP sent to ${personalDetails.mobile.slice(0, 4)}XXXX${personalDetails.mobile.slice(-2)}`
                   : "OTP sent to your Aadhaar-linked mobile"}
@@ -149,7 +147,7 @@ export default function KYCPage() {
                   <div
                     key={i}
                     className={`w-11 h-12 rounded-lg border flex items-center justify-center text-lg font-bold transition ${
-                      otp[i] ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-400" : "border-white/10 bg-white/[0.04]"
+                      otp[i] ? "border-mo-navy bg-mo-navy/5 text-mo-navy" : "border-gray-200 bg-mo-bg"
                     }`}
                   >
                     {otp[i] || ""}
@@ -165,8 +163,8 @@ export default function KYCPage() {
                 autoFocus
               />
               <Input label="" placeholder="Enter 6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-              <div className="text-xs text-white/30 mt-3">
-                Didn&apos;t receive? <button className="text-emerald-400 hover:underline">Resend OTP</button>
+              <div className="text-xs text-gray-400 mt-3">
+                Didn&apos;t receive? <button className="text-mo-navy hover:underline">Resend OTP</button>
               </div>
             </div>
             <div className="mt-4">
@@ -180,11 +178,11 @@ export default function KYCPage() {
         {step === "redirect" && (
           <Card>
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto rounded-full bg-blue-400/10 border border-blue-400/20 flex items-center justify-center mb-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-mo-navy/10 border border-mo-navy/20 flex items-center justify-center mb-4">
                 <span className="text-2xl">&#127909;</span>
               </div>
-              <div className="text-sm font-medium mb-2">Video KYC</div>
-              <div className="text-xs text-white/40 mb-6">
+              <div className="text-sm font-medium text-mo-navy mb-2">Video KYC</div>
+              <div className="text-xs text-mo-muted mb-6">
                 You will be redirected to Bajaj Finserv&apos;s Video KYC portal. An agent will verify your identity via video call.
               </div>
               <Button
@@ -195,7 +193,7 @@ export default function KYCPage() {
               >
                 Start Video Call
               </Button>
-              <div className="text-xs text-white/30 mt-3">Estimated wait: 2-3 minutes</div>
+              <div className="text-xs text-gray-400 mt-3">Estimated wait: 2-3 minutes</div>
             </div>
           </Card>
         )}
@@ -203,11 +201,11 @@ export default function KYCPage() {
         {step === "verifying" && (
           <Card>
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-4">
-                <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-mo-navy/10 border border-mo-navy/20 flex items-center justify-center mb-4">
+                <div className="w-8 h-8 border-2 border-mo-navy/30 border-t-mo-navy rounded-full animate-spin" />
               </div>
-              <div className="text-sm font-medium mb-2">Verifying your identity...</div>
-              <div className="text-xs text-white/40">
+              <div className="text-sm font-medium text-mo-navy mb-2">Verifying your identity...</div>
+              <div className="text-xs text-mo-muted">
                 {partner === "bajaj" ? "Fetching KYC data from CERSAI" : "Verifying with CKYC records"}
               </div>
             </div>
@@ -216,29 +214,29 @@ export default function KYCPage() {
 
         {step === "done" && (
           <>
-            <Card className="border-emerald-400/30 bg-emerald-400/5">
+            <Card className="border-emerald-200 bg-emerald-50">
               <div className="text-center py-6">
-                <div className="w-16 h-16 mx-auto rounded-full bg-emerald-400/20 flex items-center justify-center mb-4">
-                  <span className="text-3xl text-emerald-400">&#10003;</span>
+                <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                  <span className="text-3xl text-emerald-600">&#10003;</span>
                 </div>
-                <div className="text-base font-semibold text-emerald-400 mb-1">KYC Verified</div>
-                <div className="text-xs text-white/40">
+                <div className="text-base font-semibold text-emerald-700 mb-1">KYC Verified</div>
+                <div className="text-xs text-mo-muted">
                   Your identity has been verified via {method === "ckyc" ? "CKYC" : method === "ekyc" ? "E-KYC" : method === "okyc" ? "Aadhaar OTP" : method === "digilocker" ? "Digi Locker" : "Video KYC"}
                 </div>
               </div>
             </Card>
             <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs py-2 border-b border-white/5">
-                <span className="text-white/40">Name Match</span>
-                <span className="text-emerald-400">Verified</span>
+              <div className="flex justify-between text-xs py-2 border-b border-gray-100">
+                <span className="text-mo-muted">Name Match</span>
+                <span className="text-emerald-600">Verified</span>
               </div>
-              <div className="flex justify-between text-xs py-2 border-b border-white/5">
-                <span className="text-white/40">PAN Status</span>
-                <span className="text-emerald-400">Active</span>
+              <div className="flex justify-between text-xs py-2 border-b border-gray-100">
+                <span className="text-mo-muted">PAN Status</span>
+                <span className="text-emerald-600">Active</span>
               </div>
-              <div className="flex justify-between text-xs py-2 border-b border-white/5">
-                <span className="text-white/40">Transaction ID</span>
-                <span className="text-white/70 font-mono text-[11px]">POD-365260655102</span>
+              <div className="flex justify-between text-xs py-2 border-b border-gray-100">
+                <span className="text-mo-muted">Transaction ID</span>
+                <span className="text-mo-text font-mono text-[11px]">POD-365260655102</span>
               </div>
             </div>
             <BottomBar>

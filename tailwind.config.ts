@@ -5,6 +5,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        mo: {
+          navy: "#282560",
+          "navy-light": "#3C3B8E",
+          gold: "#D4A843",
+          "gold-light": "#E8B95A",
+          "gold-dark": "#B8912F",
+          bg: "#EEEDF7",
+          "bg-deep": "#E3E1F0",
+          card: "#FFFFFF",
+          muted: "#6B6997",
+          text: "#1A1744",
+        },
         ink: {
           50: "#f7f4ee",
           100: "#ece6da",
@@ -29,7 +41,9 @@ const config: Config = {
         display: ["var(--font-fraunces)", "Georgia", "serif"]
       },
       boxShadow: {
-        glow: "0 0 80px -10px rgba(255, 157, 61, 0.45)"
+        glow: "0 0 80px -10px rgba(255, 157, 61, 0.45)",
+        card: "0 2px 12px rgba(40, 37, 96, 0.06)",
+        "card-hover": "0 4px 20px rgba(40, 37, 96, 0.10)",
       },
       backgroundImage: {
         "grain": "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.08 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>\")"

@@ -46,31 +46,57 @@ export default function SuccessPage() {
     <Shell title="" subtitle="">
       <div className="mt-4">
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto rounded-full bg-emerald-400/20 flex items-center justify-center mb-6 relative">
-            <span className="text-5xl">&#10003;</span>
-            <div className="absolute inset-0 rounded-full border-2 border-emerald-400/30 animate-ping" style={{ animationDuration: "2s" }} />
+          <div className="w-24 h-24 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-6 relative">
+            <span className="text-5xl text-emerald-600">&#10003;</span>
+            <div className="absolute inset-0 rounded-full border-2 border-emerald-300 animate-ping" style={{ animationDuration: "2s" }} />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-400 mb-2">FD Application Submitted!</h1>
-          <p className="text-sm text-white/50">
+          <h1 className="text-2xl font-bold text-mo-navy mb-2">FD Application Submitted!</h1>
+          <p className="text-sm text-mo-muted">
             Your Fixed Deposit application has been successfully submitted to {partner === "bajaj" ? "Bajaj Finserv" : "Shriram Finance"}
           </p>
         </div>
 
-        <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-600/5 border-emerald-400/20 mb-4">
+        <Card className="bg-gradient-to-br from-mo-navy to-mo-navy-light border-0 mb-4">
           <div className="flex items-center justify-between mb-4">
-            <Badge color={partner === "bajaj" ? "blue" : "amber"}>
+            <Badge color="gold">
               {partner === "bajaj" ? "Bajaj Finserv" : "Shriram Finance"}
             </Badge>
             <Badge color="emerald">Processing</Badge>
           </div>
-          <InfoRow label="Application No." value={appNo} />
-          <InfoRow label="Deposit Amount" value={formatCurrency(fdConfig.amount)} />
-          <InfoRow label="Interest Rate" value={`${fdConfig.rate}% p.a.`} highlight />
-          <InfoRow label="Tenure" value={`${fdConfig.tenure} months`} />
-          <InfoRow label="Type" value={fdConfig.depositType === "cumulative" ? "Cumulative" : "Non-Cumulative"} />
-          <InfoRow label="Maturity Amount" value={formatCurrency(fdConfig.maturityAmount)} highlight />
-          <InfoRow label="Maturity Date" value={formatDate(maturityDateStr)} />
-          <InfoRow label="Auto-Renew" value={fdConfig.autoRenew ? "Yes" : "No"} />
+          <div className="space-y-0">
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Application No.</span>
+              <span className="text-sm font-medium text-white">{appNo}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Deposit Amount</span>
+              <span className="text-sm font-medium text-white">{formatCurrency(fdConfig.amount)}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Interest Rate</span>
+              <span className="text-sm font-medium text-mo-gold">{`${fdConfig.rate}% p.a.`}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Tenure</span>
+              <span className="text-sm font-medium text-white">{`${fdConfig.tenure} months`}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Type</span>
+              <span className="text-sm font-medium text-white">{fdConfig.depositType === "cumulative" ? "Cumulative" : "Non-Cumulative"}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Maturity Amount</span>
+              <span className="text-sm font-medium text-mo-gold">{formatCurrency(fdConfig.maturityAmount)}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5 border-b border-white/10">
+              <span className="text-sm text-white/60">Maturity Date</span>
+              <span className="text-sm font-medium text-white">{formatDate(maturityDateStr)}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-white/60">Auto-Renew</span>
+              <span className="text-sm font-medium text-white">{fdConfig.autoRenew ? "Yes" : "No"}</span>
+            </div>
+          </div>
         </Card>
 
         <Card className="mb-4">
@@ -80,28 +106,28 @@ export default function SuccessPage() {
           <InfoRow label="Submitted On" value={formatDate(today)} />
         </Card>
 
-        <Card className="mb-4 border-blue-400/10 bg-blue-400/5">
+        <Card className="mb-4 border-mo-navy/10 bg-mo-navy/5">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-blue-400 text-xs">&#9432;</span>
+            <div className="w-8 h-8 rounded-full bg-mo-navy/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-mo-navy text-xs">&#9432;</span>
             </div>
             <div>
-              <div className="text-xs font-medium text-blue-400 mb-1">What happens next?</div>
-              <div className="space-y-2 text-xs text-white/40">
+              <div className="text-xs font-medium text-mo-navy mb-1">What happens next?</div>
+              <div className="space-y-2 text-xs text-mo-muted">
                 <div className="flex items-start gap-2">
-                  <span className="text-white/20 mt-0.5">1.</span>
+                  <span className="text-gray-400 mt-0.5">1.</span>
                   <span>Your application will be processed within 1-2 business days</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-white/20 mt-0.5">2.</span>
+                  <span className="text-gray-400 mt-0.5">2.</span>
                   <span>{partner === "bajaj" ? "Bajaj Finserv" : "Shriram Finance"} will verify your documents and KYC</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-white/20 mt-0.5">3.</span>
+                  <span className="text-gray-400 mt-0.5">3.</span>
                   <span>Once approved, your FD will be booked and you&apos;ll receive a deposit receipt</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-white/20 mt-0.5">4.</span>
+                  <span className="text-gray-400 mt-0.5">4.</span>
                   <span>Track status anytime in your RIISE portfolio</span>
                 </div>
               </div>
