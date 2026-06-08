@@ -2,21 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const OVERRIDES_KEY = "tpp-roadmap-priority-overrides-v1";
+const PRIORITY_KEY = "tpp-roadmap-priority-overrides-v1";
+const TRACK_KEY = "tpp-roadmap-track-overrides-v1";
 const LOG_KEY = "tpp-roadmap-priority-log-v1";
 const EDITOR_KEY = "tpp-roadmap-editor-v1";
 const MAX_LOG = 1000;
 
-/** Map of item key → leadership priority ("P0" | "P1" | "P2" | "Hold" | ""). */
+/** Map of item key → value (priority or track). */
 export type Overrides = Record<string, string>;
 
-/** A single recorded priority change, for the team change log. */
+/** Which attribute a change applies to. */
+export type Field = "priority" | "track";
+
+/** A single recorded change, for the team change log. */
 export interface LogEntry {
   ts: number;
   editor: string;
+  field: Field;
   item: string;
   group: string;
-  from: string; // raw priority ("" = Unprioritised); "*" markers for bulk actions
+  from: string;
   to: string;
 }
 
@@ -24,8 +29,8 @@ export interface LogEntry {
 export interface ChangeMeta {
   name: string;
   group: string;
-  from: string; // current effective priority
-  source: string; // original priority from the data file
+  from: string; // current effective value
+  source: string; // original/default value
 }
 
 /** Shape of an exported / imported "priority plan" file. */
@@ -33,7 +38,8 @@ export interface Workspace {
   version: number;
   exportedAt: string;
   editor: string;
-  overrides: Overrides;
+  priorityOverrides: Overrides;
+  trackOverrides: Overrides;
   log: LogEntry[];
 }
 
@@ -47,18 +53,21 @@ function read<T>(key: string, fallback: T): T {
 }
 
 /**
- * Browser-local priority workspace: overrides + a change log + the current
- * editor's name, all persisted to localStorage. Nothing is sent anywhere;
- * sharing across the team is done by exporting / importing a plan file.
+ * Browser-local workspace for leadership priority + RIISE/Back-Office tagging:
+ * overrides for both attributes, a change log, and the current editor's name —
+ * all persisted to localStorage. Nothing is sent anywhere; sharing across the
+ * team is done by exporting / importing a plan file.
  */
 export function useOverrides() {
-  const [overrides, setOverrides] = useState<Overrides>({});
+  const [priorityOverrides, setPriorityOverrides] = useState<Overrides>({});
+  const [trackOverrides, setTrackOverrides] = useState<Overrides>({});
   const [log, setLog] = useState<LogEntry[]>([]);
   const [editor, setEditorState] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setOverrides(read<Overrides>(OVERRIDES_KEY, {}));
+    setPriorityOverrides(read<Overrides>(PRIORITY_KEY, {}));
+    setTrackOverrides(read<Overrides>(TRACK_KEY, {}));
     setLog(read<LogEntry[]>(LOG_KEY, []));
     setEditorState(read<string>(EDITOR_KEY, ""));
     setLoaded(true);
@@ -67,13 +76,14 @@ export function useOverrides() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
+      localStorage.setItem(PRIORITY_KEY, JSON.stringify(priorityOverrides));
+      localStorage.setItem(TRACK_KEY, JSON.stringify(trackOverrides));
       localStorage.setItem(LOG_KEY, JSON.stringify(log));
       localStorage.setItem(EDITOR_KEY, editor);
     } catch {
       /* ignore unavailable storage */
     }
-  }, [overrides, log, editor, loaded]);
+  }, [priorityOverrides, trackOverrides, log, editor, loaded]);
 
   const appendLog = useCallback((entry: LogEntry) => {
     setLog((l) => [entry, ...l].slice(0, MAX_LOG));
@@ -81,11 +91,12 @@ export function useOverrides() {
 
   const setEditor = useCallback((name: string) => setEditorState(name), []);
 
-  const setPriority = useCallback(
+  // Generic setter shared by both attributes.
+  const makeSetter =
+    (setter: typeof setPriorityOverrides, field: Field) =>
     (key: string, value: string, meta: ChangeMeta) => {
-      setOverrides((o) => {
+      setter((o) => {
         const next = { ...o };
-        // Setting back to the original data value clears the override entirely.
         if (value === meta.source) delete next[key];
         else next[key] = value;
         return next;
@@ -94,19 +105,19 @@ export function useOverrides() {
         appendLog({
           ts: Date.now(),
           editor: editor.trim() || "Anonymous",
+          field,
           item: meta.name,
           group: meta.group,
           from: meta.from,
           to: value,
         });
       }
-    },
-    [appendLog, editor]
-  );
+    };
 
-  const resetPriority = useCallback(
+  const makeReset =
+    (setter: typeof setPriorityOverrides, field: Field) =>
     (key: string, meta: ChangeMeta) => {
-      setOverrides((o) => {
+      setter((o) => {
         if (!(key in o)) return o;
         const next = { ...o };
         delete next[key];
@@ -116,56 +127,77 @@ export function useOverrides() {
         appendLog({
           ts: Date.now(),
           editor: editor.trim() || "Anonymous",
+          field,
           item: meta.name,
           group: meta.group,
           from: meta.from,
           to: meta.source,
         });
       }
-    },
-    [appendLog, editor]
-  );
+    };
+
+  const setPriority = useCallback(makeSetter(setPriorityOverrides, "priority"), [
+    appendLog,
+    editor,
+  ]);
+  const resetPriority = useCallback(makeReset(setPriorityOverrides, "priority"), [
+    appendLog,
+    editor,
+  ]);
+  const setTrack = useCallback(makeSetter(setTrackOverrides, "track"), [appendLog, editor]);
+  const resetTrack = useCallback(makeReset(setTrackOverrides, "track"), [appendLog, editor]);
 
   const resetAll = useCallback(() => {
-    setOverrides((o) => {
-      if (Object.keys(o).length === 0) return o;
+    const hadAny =
+      Object.keys(priorityOverrides).length > 0 || Object.keys(trackOverrides).length > 0;
+    setPriorityOverrides({});
+    setTrackOverrides({});
+    if (hadAny) {
       appendLog({
         ts: Date.now(),
         editor: editor.trim() || "Anonymous",
+        field: "priority",
         item: "All items",
         group: "",
         from: "*",
         to: "reset",
       });
-      return {};
-    });
-  }, [appendLog, editor]);
+    }
+  }, [appendLog, editor, priorityOverrides, trackOverrides]);
 
   const clearLog = useCallback(() => setLog([]), []);
 
   const exportWorkspace = useCallback(
     (): Workspace => ({
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       editor: editor.trim(),
-      overrides,
+      priorityOverrides,
+      trackOverrides,
       log,
     }),
-    [editor, overrides, log]
+    [editor, priorityOverrides, trackOverrides, log]
   );
 
-  const importWorkspace = useCallback((ws: Partial<Workspace>) => {
-    if (ws.overrides && typeof ws.overrides === "object") setOverrides(ws.overrides);
+  const importWorkspace = useCallback((ws: Partial<Workspace> & { overrides?: Overrides }) => {
+    // v2 has priorityOverrides/trackOverrides; v1 had a single `overrides` map.
+    const prio = ws.priorityOverrides ?? ws.overrides;
+    if (prio && typeof prio === "object") setPriorityOverrides(prio);
+    if (ws.trackOverrides && typeof ws.trackOverrides === "object")
+      setTrackOverrides(ws.trackOverrides);
     if (Array.isArray(ws.log)) setLog(ws.log.slice(0, MAX_LOG));
   }, []);
 
   return {
-    overrides,
+    priorityOverrides,
+    trackOverrides,
     log,
     editor,
     setEditor,
     setPriority,
     resetPriority,
+    setTrack,
+    resetTrack,
     resetAll,
     clearLog,
     exportWorkspace,
