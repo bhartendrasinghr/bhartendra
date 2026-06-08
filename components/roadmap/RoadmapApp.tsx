@@ -18,7 +18,7 @@ import {
 } from "@/lib/roadmap/types";
 import { Pill, Kpi, Panel, BarList, BarDatum } from "./ui";
 
-type View = "dashboard" | "roadmap" | "backlog";
+type View = "dashboard" | "priority" | "roadmap" | "backlog";
 
 const ALL = "All";
 
@@ -147,6 +147,7 @@ export default function RoadmapApp() {
             {(
               [
                 ["dashboard", "Dashboard"],
+                ["priority", "Priorities"],
                 ["roadmap", "Roadmap"],
                 ["backlog", "Backlog"],
               ] as [View, string][]
@@ -214,6 +215,7 @@ export default function RoadmapApp() {
 
       <main className="mx-auto max-w-7xl px-5 py-6">
         {view === "dashboard" && <Dashboard items={filtered} stakeholders={stakeholders} />}
+        {view === "priority" && <PriorityBoard items={filtered} />}
         {view === "roadmap" && <Roadmap items={filtered} />}
         {view === "backlog" && (
           <Backlog
@@ -296,6 +298,11 @@ function Dashboard({ items, stakeholders }: { items: BacklogItem[]; stakeholders
         <Kpi label="In UAT" value={inUat} accent="text-violet-600" />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <GroupSummaryCard group="A" items={items} />
+        <GroupSummaryCard group="B" items={items} />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="By product (gold = high impact)">
           <BarList data={orderedBars(items, (i) => i.product, PRODUCT_ORDER, true)} />
@@ -320,25 +327,15 @@ function Dashboard({ items, stakeholders }: { items: BacklogItem[]; stakeholders
             data={orderedBars(items, (i) => effectiveSequence(i), SEQUENCE_ORDER, true, "bg-emerald-500")}
           />
         </Panel>
-        <Panel title="By group">
-          <div className="grid grid-cols-2 gap-3">
-            {(["A", "B"] as const).map((g) => {
-              const n = items.filter((i) => i.group === g).length;
-              return (
-                <div key={g} className="rounded-xl bg-mo-bg p-4">
-                  <div className="text-3xl font-bold text-mo-navy">{n}</div>
-                  <div className="text-xs font-medium text-mo-text">
-                    {g} · {GROUP_LABEL[g]}
-                  </div>
-                  <div className="mt-1 text-[11px] text-mo-muted">
-                    {g === "A"
-                      ? "PM-originated initiatives"
-                      : "Business / ops / compliance"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <Panel title="By domain">
+          <BarList
+            data={orderedBars(
+              items,
+              (i) => i.domain,
+              ["Third-Party Products", "Investment Products"],
+              true
+            )}
+          />
         </Panel>
       </div>
 
@@ -407,6 +404,154 @@ function ImpactEffortMatrix({ items }: { items: BacklogItem[] }) {
   );
 }
 
+/* --------------- Group A/B segregation + priority alignment --------------- */
+
+function GroupSummaryCard({ group, items }: { group: "A" | "B"; items: BacklogItem[] }) {
+  const list = items.filter((i) => i.group === group);
+  const desc =
+    group === "A"
+      ? "PM-originated ideas that improve product experience, growth & trust."
+      : "Raised by business, ops, compliance & partners.";
+  const prio = PRIORITY_ORDER.map((p) => ({
+    p,
+    n: list.filter((i) => priorityKey(i) === p).length,
+  })).filter((x) => x.n > 0);
+  const high = list.filter((i) => i.highImpact).length;
+  const quick = list.filter((i) => i.quickWin).length;
+
+  return (
+    <div className="rounded-2xl bg-mo-card p-5 shadow-card ring-1 ring-black/5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-mo-gold-dark">
+            Group {group}
+          </div>
+          <h3 className="text-base font-bold text-mo-navy">{GROUP_LABEL[group]}</h3>
+          <p className="mt-0.5 max-w-xs text-[11px] text-mo-muted">{desc}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold text-mo-navy">{list.length}</div>
+          <div className="text-[10px] uppercase tracking-wide text-mo-muted">items</div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {prio.map(({ p, n }) => (
+          <span
+            key={p}
+            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ring-1 ring-inset ${PRIORITY_STYLE[p]}`}
+          >
+            {p === "—" ? "Unset" : p}
+            <span className="tabular-nums">{n}</span>
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-3 flex gap-4 text-xs text-mo-muted">
+        <span>
+          High impact <b className="text-mo-gold-dark">{high}</b>
+        </span>
+        <span>
+          Quick wins <b className="text-emerald-600">{quick}</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Compact item row used in the priority alignment board. */
+function ItemRow({ item }: { item: BacklogItem }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-mo-bg px-2.5 py-2 ring-1 ring-black/5">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium leading-snug text-mo-text" title={item.what || item.name}>
+          {item.name}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          <Pill className="bg-mo-navy/5 text-mo-navy ring-mo-navy/10">{item.product}</Pill>
+          {item.impact && <Pill className={IMPACT_STYLE[item.impact]}>Imp {item.impact}</Pill>}
+          {item.effort && (
+            <Pill className="bg-slate-100 text-slate-600 ring-slate-200">Eff {item.effort}</Pill>
+          )}
+          <Pill className={STATUS_STYLE[item.status] ?? STATUS_STYLE.Backlog}>{item.status}</Pill>
+        </div>
+      </div>
+      {item.scoreNum != null && (
+        <span
+          className="shrink-0 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold text-mo-navy ring-1 ring-black/5"
+          title="Suggested score = Impact ÷ Effort"
+        >
+          {item.scoreNum}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function GroupPriorityColumn({ group, items }: { group: "A" | "B"; items: BacklogItem[] }) {
+  const list = items.filter((i) => i.group === group);
+  const buckets = PRIORITY_ORDER.map((p) => ({
+    p,
+    rows: list
+      .filter((i) => priorityKey(i) === p)
+      .sort((a, b) => (b.scoreNum ?? 0) - (a.scoreNum ?? 0)),
+  })).filter((b) => b.rows.length > 0);
+
+  return (
+    <div className="rounded-2xl bg-mo-card p-4 shadow-card ring-1 ring-black/5">
+      <div className="mb-3 flex items-baseline justify-between border-b border-black/5 pb-2">
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-mo-gold-dark">
+            Group {group}
+          </span>
+          <h3 className="text-base font-bold text-mo-navy">{GROUP_LABEL[group]}</h3>
+        </div>
+        <span className="text-sm font-semibold text-mo-muted">{list.length}</span>
+      </div>
+      {buckets.length === 0 && (
+        <p className="py-8 text-center text-xs text-mo-muted">No items</p>
+      )}
+      <div className="space-y-4">
+        {buckets.map(({ p, rows }) => (
+          <div key={p}>
+            <div className="mb-1.5 flex items-center gap-2">
+              <Pill className={PRIORITY_STYLE[p]}>{p === "—" ? "Unprioritised" : p}</Pill>
+              <span className="text-[11px] text-mo-muted">
+                {rows.length} item{rows.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {rows.map((it, idx) => (
+                <ItemRow key={`${it.id}-${idx}`} item={it} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PriorityBoard({ items }: { items: BacklogItem[] }) {
+  return (
+    <div className="space-y-4">
+      <Panel>
+        <p className="text-xs text-mo-text">
+          Every item segregated into{" "}
+          <b>Product Initiatives</b> and <b>Business Requirements</b>, then grouped under
+          leadership priority (P0 → P2). Within each priority, items are ordered by suggested
+          score (Impact ÷ Effort) so the most important, highest-leverage work surfaces first —
+          giving leadership a single place to review importance and align.
+        </p>
+      </Panel>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <GroupPriorityColumn group="A" items={items} />
+        <GroupPriorityColumn group="B" items={items} />
+      </div>
+    </div>
+  );
+}
+
 /* -------------------------------- Roadmap -------------------------------- */
 
 function Roadmap({ items }: { items: BacklogItem[] }) {
@@ -469,6 +614,12 @@ function RoadmapCard({ item }: { item: BacklogItem }) {
         </p>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-1">
+        <Pill
+          className="bg-mo-gold/15 text-mo-gold-dark ring-mo-gold/20"
+          title={`${item.group} · ${GROUP_LABEL[item.group]}`}
+        >
+          {item.group}
+        </Pill>
         <Pill className="bg-mo-navy/5 text-mo-navy ring-mo-navy/10">{item.product}</Pill>
         {item.priority && (
           <Pill className={PRIORITY_STYLE[priorityKey(item)]}>{item.priority}</Pill>
@@ -583,9 +734,12 @@ function Backlog({
     return arr;
   }, [items, sortKey, sortDir]);
 
+  const groupA = sorted.filter((i) => i.group === "A");
+  const groupB = sorted.filter((i) => i.group === "B");
+
   return (
     <Panel
-      title={`Backlog — ${items.length} items`}
+      title={`All items — ${items.length}`}
       right={
         <button
           onClick={() => exportCsv(sorted)}
@@ -594,100 +748,139 @@ function Backlog({
           Export CSV
         </button>
       }
-      className="overflow-hidden p-0"
     >
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[920px] text-left text-sm">
-          <thead className="bg-mo-bg text-[11px] uppercase tracking-wide text-mo-muted">
-            <tr>
-              {COLUMNS.map((c) => (
-                <th
-                  key={String(c.key)}
-                  onClick={() => onSort(c.key)}
-                  className="cursor-pointer select-none px-3 py-2.5 font-semibold hover:text-mo-navy"
-                >
-                  {c.label}
-                  {sortKey === c.key && (
-                    <span className="ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((it, idx) => {
-              const rowId = `${it.id}-${idx}`;
-              const open = expanded === rowId;
-              return (
-                <Fragment key={rowId}>
-                  <tr
-                    onClick={() => setExpanded(open ? null : rowId)}
-                    className="cursor-pointer border-t border-black/5 hover:bg-mo-bg/60"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-mo-muted">
-                      {it.id}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="font-medium text-mo-text">{it.name}</div>
-                      <div className="text-[11px] text-mo-muted">
-                        {it.group} · {GROUP_LABEL[it.group]}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-mo-text">{it.product}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-mo-muted">
-                      {it.stakeholder || "—"}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {it.impact && (
-                        <Pill className={IMPACT_STYLE[it.impact]}>{it.impact}</Pill>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-mo-text">{it.effort || "—"}</td>
-                    <td className="px-3 py-2.5 font-semibold tabular-nums text-mo-navy">
-                      {it.scoreNum ?? "—"}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {it.priority && (
-                        <Pill className={PRIORITY_STYLE[priorityKey(it)]}>{it.priority}</Pill>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-mo-muted">
-                      {effectiveSequence(it)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <Pill className={STATUS_STYLE[it.status] ?? STATUS_STYLE.Backlog}>
-                        {it.status}
-                      </Pill>
-                    </td>
-                  </tr>
-                  {open && (
-                    <tr className="border-t border-black/5 bg-mo-bg/40">
-                      <td colSpan={COLUMNS.length} className="px-3 py-3">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <Detail label="What" value={it.what} />
-                          <Detail label="Why" value={it.why} />
-                          <Detail label="Primary impact area" value={it.impactArea} />
-                          <Detail label="Dependencies" value={it.dependencies} />
-                          <Detail label="Source" value={it.source} />
-                          <Detail label="Domain" value={it.domain} />
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-10 text-center text-mo-muted">
-                  No items match the current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="space-y-6">
+        {(["A", "B"] as const).map((g) => (
+          <div key={g}>
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="rounded-md bg-mo-gold/15 px-2 py-0.5 text-sm font-bold text-mo-gold-dark">
+                {g}
+              </span>
+              <h4 className="text-sm font-bold text-mo-navy">{GROUP_LABEL[g]}</h4>
+              <span className="text-xs text-mo-muted">
+                {(g === "A" ? groupA : groupB).length} items
+              </span>
+            </div>
+            <BacklogTable
+              rows={g === "A" ? groupA : groupB}
+              keyPrefix={g}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={onSort}
+              expanded={expanded}
+              setExpanded={setExpanded}
+            />
+          </div>
+        ))}
       </div>
     </Panel>
+  );
+}
+
+function BacklogTable({
+  rows,
+  keyPrefix,
+  sortKey,
+  sortDir,
+  onSort,
+  expanded,
+  setExpanded,
+}: {
+  rows: BacklogItem[];
+  keyPrefix: string;
+  sortKey: keyof BacklogItem | "scoreNum";
+  sortDir: "asc" | "desc";
+  onSort: (k: keyof BacklogItem | "scoreNum") => void;
+  expanded: string | null;
+  setExpanded: (v: string | null) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl ring-1 ring-black/5">
+      <table className="w-full min-w-[920px] text-left text-sm">
+        <thead className="bg-mo-bg text-[11px] uppercase tracking-wide text-mo-muted">
+          <tr>
+            {COLUMNS.map((c) => (
+              <th
+                key={String(c.key)}
+                onClick={() => onSort(c.key)}
+                className="cursor-pointer select-none px-3 py-2.5 font-semibold hover:text-mo-navy"
+              >
+                {c.label}
+                {sortKey === c.key && (
+                  <span className="ml-0.5">{sortDir === "asc" ? "▲" : "▼"}</span>
+                )}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((it, idx) => {
+            const rowId = `${keyPrefix}-${it.id}-${idx}`;
+            const open = expanded === rowId;
+            return (
+              <Fragment key={rowId}>
+                <tr
+                  onClick={() => setExpanded(open ? null : rowId)}
+                  className="cursor-pointer border-t border-black/5 hover:bg-mo-bg/60"
+                >
+                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[11px] text-mo-muted">
+                    {it.id}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="font-medium text-mo-text">{it.name}</div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-mo-text">{it.product}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-mo-muted">
+                    {it.stakeholder || "—"}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {it.impact && <Pill className={IMPACT_STYLE[it.impact]}>{it.impact}</Pill>}
+                  </td>
+                  <td className="px-3 py-2.5 text-mo-text">{it.effort || "—"}</td>
+                  <td className="px-3 py-2.5 font-semibold tabular-nums text-mo-navy">
+                    {it.scoreNum ?? "—"}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {it.priority && (
+                      <Pill className={PRIORITY_STYLE[priorityKey(it)]}>{it.priority}</Pill>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-mo-muted">
+                    {effectiveSequence(it)}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <Pill className={STATUS_STYLE[it.status] ?? STATUS_STYLE.Backlog}>
+                      {it.status}
+                    </Pill>
+                  </td>
+                </tr>
+                {open && (
+                  <tr className="border-t border-black/5 bg-mo-bg/40">
+                    <td colSpan={COLUMNS.length} className="px-3 py-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <Detail label="What" value={it.what} />
+                        <Detail label="Why" value={it.why} />
+                        <Detail label="Primary impact area" value={it.impactArea} />
+                        <Detail label="Dependencies" value={it.dependencies} />
+                        <Detail label="Source" value={it.source} />
+                        <Detail label="Domain" value={it.domain} />
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-mo-muted">
+                No items in this group match the current filters.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
