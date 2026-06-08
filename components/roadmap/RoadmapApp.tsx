@@ -691,7 +691,7 @@ function Segmented({
   );
 }
 
-/** Product picker shown as selectable tiles (no dropdown). */
+/** Product picker shown as a row of selectable chips (no dropdown). */
 function ProductTiles({
   products,
   counts,
@@ -711,16 +711,20 @@ function ProductTiles({
           <button
             key={p}
             onClick={() => onSelect(p)}
-            className={`rounded-xl px-3.5 py-2 text-left ring-1 transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition ${
               active
                 ? "bg-mo-navy text-white ring-mo-navy"
-                : "bg-mo-card text-mo-navy ring-black/5 hover:ring-mo-navy/40"
+                : "bg-mo-card text-mo-navy ring-black/10 hover:ring-mo-navy/40"
             }`}
           >
-            <div className="text-sm font-semibold leading-tight">{p}</div>
-            <div className={`text-[11px] ${active ? "text-white/60" : "text-mo-muted"}`}>
-              {counts[p] ?? 0} item{(counts[p] ?? 0) !== 1 ? "s" : ""}
-            </div>
+            {p}
+            <span
+              className={`rounded-full px-1.5 text-[11px] font-semibold ${
+                active ? "bg-white/20 text-white" : "bg-mo-bg text-mo-muted"
+              }`}
+            >
+              {counts[p] ?? 0}
+            </span>
           </button>
         );
       })}
