@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   BACKLOG,
@@ -17,9 +17,21 @@ import {
   priorityKey,
 } from "@/lib/roadmap/types";
 import { Pill, Kpi, Panel, BarList, BarDatum } from "./ui";
-import { useOverrides, Overrides } from "./useOverrides";
+import {
+  useOverrides,
+  Overrides,
+  LogEntry,
+  ChangeMeta,
+  Workspace,
+} from "./useOverrides";
 
 const PRIORITY_OPTIONS = ["P0", "P1", "P2", "Hold", ""];
+
+/** A backlog item with its original (data-file) priority preserved alongside
+ *  the effective one, so edits can be logged and reset cleanly. */
+type EditableItem = BacklogItem & { sourcePriority: string };
+
+const priorityLabel = (p: string) => (p === "" ? "Unprioritised" : p);
 
 type View = "dashboard" | "priority" | "roadmap" | "backlog";
 
@@ -67,18 +79,27 @@ export default function RoadmapApp() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const {
     overrides,
+    log,
+    editor,
+    setEditor,
     setPriority: setItemPriority,
     resetPriority,
     resetAll,
+    clearLog,
+    exportWorkspace,
+    importWorkspace,
   } = useOverrides();
 
   // Merge browser-local priority overrides into the data so every view —
-  // buckets, counts, roadmap lanes, CSV export — reflects the change.
-  const data = useMemo(
+  // buckets, counts, roadmap lanes, CSV export — reflects the change. The
+  // original priority is preserved as sourcePriority for logging / reset.
+  const data = useMemo<EditableItem[]>(
     () =>
-      BACKLOG.map((i) =>
-        i.key in overrides ? { ...i, priority: overrides[i.key] } : i
-      ),
+      BACKLOG.map((i) => ({
+        ...i,
+        sourcePriority: i.priority,
+        priority: i.key in overrides ? overrides[i.key] : i.priority,
+      })),
     [overrides]
   );
 
@@ -236,11 +257,17 @@ export default function RoadmapApp() {
         {view === "dashboard" && <Dashboard items={filtered} stakeholders={stakeholders} />}
         {view === "priority" && (
           <PriorityBoard
-            items={filtered}
+            items={filtered as EditableItem[]}
             overrides={overrides}
+            log={log}
+            editor={editor}
+            setEditor={setEditor}
             setPriority={setItemPriority}
             resetPriority={resetPriority}
             resetAll={resetAll}
+            clearLog={clearLog}
+            exportWorkspace={exportWorkspace}
+            importWorkspace={importWorkspace}
           />
         )}
         {view === "roadmap" && <Roadmap items={filtered} />}
@@ -486,6 +513,13 @@ function GroupSummaryCard({ group, items }: { group: "A" | "B"; items: BacklogIt
   );
 }
 
+const changeMeta = (it: EditableItem): ChangeMeta => ({
+  name: it.name,
+  group: it.group,
+  from: it.priority,
+  source: it.sourcePriority,
+});
+
 /** Compact, editable item row used in the priority alignment board. */
 function ItemRow({
   item,
@@ -493,7 +527,7 @@ function ItemRow({
   onChange,
   onReset,
 }: {
-  item: BacklogItem;
+  item: EditableItem;
   edited: boolean;
   onChange: (value: string) => void;
   onReset: () => void;
@@ -530,7 +564,7 @@ function ItemRow({
           {edited && (
             <button
               onClick={onReset}
-              title="Reset to source priority"
+              title={`Reset to source priority (${priorityLabel(item.sourcePriority)})`}
               className="text-xs text-mo-muted hover:text-mo-navy"
             >
               ↺
@@ -564,10 +598,10 @@ function GroupPriorityColumn({
   resetPriority,
 }: {
   group: "A" | "B";
-  items: BacklogItem[];
+  items: EditableItem[];
   overrides: Overrides;
-  setPriority: (key: string, value: string) => void;
-  resetPriority: (key: string) => void;
+  setPriority: (key: string, value: string, meta: ChangeMeta) => void;
+  resetPriority: (key: string, meta: ChangeMeta) => void;
 }) {
   const list = items.filter((i) => i.group === group);
   const buckets = PRIORITY_ORDER.map((p) => ({
@@ -606,8 +640,8 @@ function GroupPriorityColumn({
                   key={it.key}
                   item={it}
                   edited={it.key in overrides}
-                  onChange={(v) => setPriority(it.key, v)}
-                  onReset={() => resetPriority(it.key)}
+                  onChange={(v) => setPriority(it.key, v, changeMeta(it))}
+                  onReset={() => resetPriority(it.key, changeMeta(it))}
                 />
               ))}
             </div>
@@ -618,47 +652,207 @@ function GroupPriorityColumn({
   );
 }
 
+function downloadFile(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+
+/** Scrollable audit trail of priority changes made in this browser. */
+function ChangeLogPanel({ log, clearLog }: { log: LogEntry[]; clearLog: () => void }) {
+  const exportCsv = () => {
+    const head = "When,Who,Item,Group,From,To";
+    const rows = log.map((e) =>
+      [
+        new Date(e.ts).toLocaleString(),
+        e.editor,
+        e.item,
+        e.group,
+        e.from === "*" ? "(all)" : priorityLabel(e.from),
+        e.to === "reset" ? "(reset)" : priorityLabel(e.to),
+      ]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    downloadFile(`priority-log-${stamp()}.csv`, [head, ...rows].join("\n"), "text/csv");
+  };
+
+  return (
+    <Panel>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-bold text-mo-navy">
+          Change log <span className="font-normal text-mo-muted">({log.length})</span>
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCsv}
+            disabled={log.length === 0}
+            className="rounded-lg border border-black/10 px-2 py-1 text-[11px] font-medium text-mo-navy enabled:hover:bg-mo-bg disabled:opacity-40"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={clearLog}
+            disabled={log.length === 0}
+            className="rounded-lg border border-black/10 px-2 py-1 text-[11px] font-medium text-mo-navy enabled:hover:bg-mo-bg disabled:opacity-40"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      {log.length === 0 ? (
+        <p className="py-4 text-center text-xs text-mo-muted">
+          No changes yet. Priority edits will be recorded here.
+        </p>
+      ) : (
+        <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
+          {log.map((e, idx) => (
+            <div
+              key={`${e.ts}-${idx}`}
+              className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md bg-mo-bg px-2 py-1.5 text-[11px] ring-1 ring-black/5"
+            >
+              <span className="text-mo-muted">{new Date(e.ts).toLocaleString()}</span>
+              <span className="font-semibold text-mo-navy">{e.editor}</span>
+              {e.from === "*" ? (
+                <span className="text-mo-text">reset all adjustments</span>
+              ) : (
+                <span className="text-mo-text">
+                  {e.item}{e.group ? ` (${e.group})` : ""}:{" "}
+                  <b>{priorityLabel(e.from)}</b> → <b>{priorityLabel(e.to)}</b>
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function PriorityBoard({
   items,
   overrides,
+  log,
+  editor,
+  setEditor,
   setPriority,
   resetPriority,
   resetAll,
+  clearLog,
+  exportWorkspace,
+  importWorkspace,
 }: {
-  items: BacklogItem[];
+  items: EditableItem[];
   overrides: Overrides;
-  setPriority: (key: string, value: string) => void;
-  resetPriority: (key: string) => void;
+  log: LogEntry[];
+  editor: string;
+  setEditor: (name: string) => void;
+  setPriority: (key: string, value: string, meta: ChangeMeta) => void;
+  resetPriority: (key: string, meta: ChangeMeta) => void;
   resetAll: () => void;
+  clearLog: () => void;
+  exportWorkspace: () => Workspace;
+  importWorkspace: (ws: Partial<Workspace>) => void;
 }) {
+  const [showLog, setShowLog] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const editedCount = Object.keys(overrides).length;
+
+  const onExport = () =>
+    downloadFile(
+      `priority-plan-${stamp()}.json`,
+      JSON.stringify(exportWorkspace(), null, 2),
+      "application/json"
+    );
+
+  const onImportFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const ws = JSON.parse(String(reader.result)) as Partial<Workspace>;
+        if (!ws || typeof ws !== "object" || !ws.overrides) {
+          throw new Error("not a plan file");
+        }
+        const n = Object.keys(ws.overrides).length;
+        if (
+          window.confirm(
+            `Load this priority plan? It has ${n} adjustment${n !== 1 ? "s" : ""}` +
+              `${ws.log ? ` and ${ws.log.length} log entries` : ""}. ` +
+              `This replaces your current adjustments in this browser.`
+          )
+        ) {
+          importWorkspace(ws);
+        }
+      } catch {
+        window.alert("That file isn't a valid priority plan (.json) export.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const btn =
+    "rounded-lg border border-black/10 px-2.5 py-1 text-xs font-medium text-mo-navy enabled:hover:bg-mo-bg disabled:opacity-40";
+
   return (
     <div className="space-y-4">
       <Panel>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-3xl text-xs text-mo-text">
-            Every item segregated into <b>Product Initiatives</b> and{" "}
-            <b>Business Requirements</b>, grouped under leadership priority (P0 → P2) and ordered
-            by suggested score (Impact ÷ Effort). <b>Adjust priority inline</b> using the dropdown
-            on any item — items re-bucket instantly. Changes are saved in this browser for review
-            sessions; use Export CSV on the Backlog tab to share an agreed set.
-          </p>
-          <div className="flex items-center gap-2">
+        <p className="max-w-3xl text-xs text-mo-text">
+          Every item segregated into <b>Product Initiatives</b> and{" "}
+          <b>Business Requirements</b>, grouped under leadership priority (P0 → P2) and ordered by
+          suggested score (Impact ÷ Effort). <b>Adjust priority inline</b> using the dropdown on any
+          item — items re-bucket instantly. Changes are saved in <b>this browser</b> and recorded in
+          the change log. To align as a team, <b>Export plan</b> and share the file; others{" "}
+          <b>Import plan</b> to see the same priorities and history.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-black/5 pt-3">
+          <label className="flex items-center gap-1.5 text-[11px] text-mo-muted">
+            Your name
+            <input
+              value={editor}
+              onChange={(e) => setEditor(e.target.value)}
+              placeholder="for the change log"
+              className="h-7 w-40 rounded-md border border-black/10 bg-white px-2 text-xs text-mo-navy focus:border-mo-navy focus:outline-none"
+            />
+          </label>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             {editedCount > 0 && (
               <span className="rounded-md bg-mo-gold/15 px-2 py-1 text-[11px] font-semibold text-mo-gold-dark ring-1 ring-mo-gold/30">
                 {editedCount} adjusted
               </span>
             )}
-            <button
-              onClick={resetAll}
-              disabled={editedCount === 0}
-              className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-medium text-mo-navy enabled:hover:bg-mo-bg disabled:opacity-40"
-            >
+            <button onClick={() => setShowLog((s) => !s)} className={btn}>
+              {showLog ? "Hide log" : `Log (${log.length})`}
+            </button>
+            <button onClick={onExport} className={btn}>
+              Export plan
+            </button>
+            <button onClick={() => fileRef.current?.click()} className={btn}>
+              Import plan
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImportFile(f);
+                e.target.value = "";
+              }}
+            />
+            <button onClick={resetAll} disabled={editedCount === 0} className={btn}>
               Reset all
             </button>
           </div>
         </div>
       </Panel>
+      {showLog && <ChangeLogPanel log={log} clearLog={clearLog} />}
       <div className="grid gap-4 lg:grid-cols-2">
         <GroupPriorityColumn
           group="A"
