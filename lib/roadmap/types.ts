@@ -6,6 +6,7 @@ import raw from "./backlog.json";
  * Excel columns so the data stays auditable against the originals.
  */
 export interface BacklogItem {
+  key: string; // stable unique key for client-side overrides
   id: string;
   name: string;
   product: string;
@@ -31,7 +32,9 @@ export interface BacklogItem {
   highImpact: boolean;
 }
 
-export const BACKLOG: BacklogItem[] = raw as BacklogItem[];
+export const BACKLOG: BacklogItem[] = (raw as Omit<BacklogItem, "key">[]).map(
+  (i, idx) => ({ ...i, key: `${i.fileTag}:${i.group}:${i.id}:${idx}` })
+);
 
 export const GROUP_LABEL: Record<string, string> = {
   A: "Product Initiatives",

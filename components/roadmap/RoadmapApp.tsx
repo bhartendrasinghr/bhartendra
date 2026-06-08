@@ -17,6 +17,9 @@ import {
   priorityKey,
 } from "@/lib/roadmap/types";
 import { Pill, Kpi, Panel, BarList, BarDatum } from "./ui";
+import { useOverrides, Overrides } from "./useOverrides";
+
+const PRIORITY_OPTIONS = ["P0", "P1", "P2", "Hold", ""];
 
 type View = "dashboard" | "priority" | "roadmap" | "backlog";
 
@@ -62,6 +65,22 @@ export default function RoadmapApp() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<keyof BacklogItem | "scoreNum">("scoreNum");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const {
+    overrides,
+    setPriority: setItemPriority,
+    resetPriority,
+    resetAll,
+  } = useOverrides();
+
+  // Merge browser-local priority overrides into the data so every view —
+  // buckets, counts, roadmap lanes, CSV export — reflects the change.
+  const data = useMemo(
+    () =>
+      BACKLOG.map((i) =>
+        i.key in overrides ? { ...i, priority: overrides[i.key] } : i
+      ),
+    [overrides]
+  );
 
   const domains = useMemo(
     () => [ALL, ...Array.from(new Set(BACKLOG.map((i) => i.domain)))],
@@ -82,7 +101,7 @@ export default function RoadmapApp() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return BACKLOG.filter((i) => {
+    return data.filter((i) => {
       if (domain !== ALL && i.domain !== domain) return false;
       if (product !== ALL && i.product !== product) return false;
       if (group !== ALL && i.group !== group) return false;
@@ -95,7 +114,7 @@ export default function RoadmapApp() {
       }
       return true;
     });
-  }, [domain, product, group, status, priority, sequence, search]);
+  }, [data, domain, product, group, status, priority, sequence, search]);
 
   const resetFilters = () => {
     setDomain(ALL);
@@ -215,7 +234,15 @@ export default function RoadmapApp() {
 
       <main className="mx-auto max-w-7xl px-5 py-6">
         {view === "dashboard" && <Dashboard items={filtered} stakeholders={stakeholders} />}
-        {view === "priority" && <PriorityBoard items={filtered} />}
+        {view === "priority" && (
+          <PriorityBoard
+            items={filtered}
+            overrides={overrides}
+            setPriority={setItemPriority}
+            resetPriority={resetPriority}
+            resetAll={resetAll}
+          />
+        )}
         {view === "roadmap" && <Roadmap items={filtered} />}
         {view === "backlog" && (
           <Backlog
@@ -459,10 +486,24 @@ function GroupSummaryCard({ group, items }: { group: "A" | "B"; items: BacklogIt
   );
 }
 
-/** Compact item row used in the priority alignment board. */
-function ItemRow({ item }: { item: BacklogItem }) {
+/** Compact, editable item row used in the priority alignment board. */
+function ItemRow({
+  item,
+  edited,
+  onChange,
+  onReset,
+}: {
+  item: BacklogItem;
+  edited: boolean;
+  onChange: (value: string) => void;
+  onReset: () => void;
+}) {
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-mo-bg px-2.5 py-2 ring-1 ring-black/5">
+    <div
+      className={`flex items-start gap-2 rounded-lg bg-mo-bg px-2.5 py-2 ring-1 ${
+        edited ? "ring-mo-gold/50" : "ring-black/5"
+      }`}
+    >
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium leading-snug text-mo-text" title={item.what || item.name}>
           {item.name}
@@ -476,19 +517,58 @@ function ItemRow({ item }: { item: BacklogItem }) {
           <Pill className={STATUS_STYLE[item.status] ?? STATUS_STYLE.Backlog}>{item.status}</Pill>
         </div>
       </div>
-      {item.scoreNum != null && (
-        <span
-          className="shrink-0 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold text-mo-navy ring-1 ring-black/5"
-          title="Suggested score = Impact ÷ Effort"
-        >
-          {item.scoreNum}
-        </span>
-      )}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        {item.scoreNum != null && (
+          <span
+            className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold text-mo-navy ring-1 ring-black/5"
+            title="Suggested score = Impact ÷ Effort"
+          >
+            {item.scoreNum}
+          </span>
+        )}
+        <div className="flex items-center gap-1">
+          {edited && (
+            <button
+              onClick={onReset}
+              title="Reset to source priority"
+              className="text-xs text-mo-muted hover:text-mo-navy"
+            >
+              ↺
+            </button>
+          )}
+          <select
+            value={item.priority || ""}
+            onChange={(e) => onChange(e.target.value)}
+            title="Set leadership priority"
+            className={`h-7 rounded-md border bg-white px-1 text-[11px] font-semibold focus:border-mo-navy focus:outline-none ${
+              edited ? "border-mo-gold text-mo-gold-dark" : "border-black/10 text-mo-navy"
+            }`}
+          >
+            {PRIORITY_OPTIONS.map((p) => (
+              <option key={p || "unset"} value={p}>
+                {p || "Unset"}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }
 
-function GroupPriorityColumn({ group, items }: { group: "A" | "B"; items: BacklogItem[] }) {
+function GroupPriorityColumn({
+  group,
+  items,
+  overrides,
+  setPriority,
+  resetPriority,
+}: {
+  group: "A" | "B";
+  items: BacklogItem[];
+  overrides: Overrides;
+  setPriority: (key: string, value: string) => void;
+  resetPriority: (key: string) => void;
+}) {
   const list = items.filter((i) => i.group === group);
   const buckets = PRIORITY_ORDER.map((p) => ({
     p,
@@ -521,8 +601,14 @@ function GroupPriorityColumn({ group, items }: { group: "A" | "B"; items: Backlo
               </span>
             </div>
             <div className="space-y-1.5">
-              {rows.map((it, idx) => (
-                <ItemRow key={`${it.id}-${idx}`} item={it} />
+              {rows.map((it) => (
+                <ItemRow
+                  key={it.key}
+                  item={it}
+                  edited={it.key in overrides}
+                  onChange={(v) => setPriority(it.key, v)}
+                  onReset={() => resetPriority(it.key)}
+                />
               ))}
             </div>
           </div>
@@ -532,21 +618,62 @@ function GroupPriorityColumn({ group, items }: { group: "A" | "B"; items: Backlo
   );
 }
 
-function PriorityBoard({ items }: { items: BacklogItem[] }) {
+function PriorityBoard({
+  items,
+  overrides,
+  setPriority,
+  resetPriority,
+  resetAll,
+}: {
+  items: BacklogItem[];
+  overrides: Overrides;
+  setPriority: (key: string, value: string) => void;
+  resetPriority: (key: string) => void;
+  resetAll: () => void;
+}) {
+  const editedCount = Object.keys(overrides).length;
   return (
     <div className="space-y-4">
       <Panel>
-        <p className="text-xs text-mo-text">
-          Every item segregated into{" "}
-          <b>Product Initiatives</b> and <b>Business Requirements</b>, then grouped under
-          leadership priority (P0 → P2). Within each priority, items are ordered by suggested
-          score (Impact ÷ Effort) so the most important, highest-leverage work surfaces first —
-          giving leadership a single place to review importance and align.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-3xl text-xs text-mo-text">
+            Every item segregated into <b>Product Initiatives</b> and{" "}
+            <b>Business Requirements</b>, grouped under leadership priority (P0 → P2) and ordered
+            by suggested score (Impact ÷ Effort). <b>Adjust priority inline</b> using the dropdown
+            on any item — items re-bucket instantly. Changes are saved in this browser for review
+            sessions; use Export CSV on the Backlog tab to share an agreed set.
+          </p>
+          <div className="flex items-center gap-2">
+            {editedCount > 0 && (
+              <span className="rounded-md bg-mo-gold/15 px-2 py-1 text-[11px] font-semibold text-mo-gold-dark ring-1 ring-mo-gold/30">
+                {editedCount} adjusted
+              </span>
+            )}
+            <button
+              onClick={resetAll}
+              disabled={editedCount === 0}
+              className="rounded-lg border border-black/10 px-2.5 py-1 text-xs font-medium text-mo-navy enabled:hover:bg-mo-bg disabled:opacity-40"
+            >
+              Reset all
+            </button>
+          </div>
+        </div>
       </Panel>
       <div className="grid gap-4 lg:grid-cols-2">
-        <GroupPriorityColumn group="A" items={items} />
-        <GroupPriorityColumn group="B" items={items} />
+        <GroupPriorityColumn
+          group="A"
+          items={items}
+          overrides={overrides}
+          setPriority={setPriority}
+          resetPriority={resetPriority}
+        />
+        <GroupPriorityColumn
+          group="B"
+          items={items}
+          overrides={overrides}
+          setPriority={setPriority}
+          resetPriority={resetPriority}
+        />
       </div>
     </div>
   );
