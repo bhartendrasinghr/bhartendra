@@ -11,7 +11,5 @@ export default function QuizLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-ink-900 text-ink-50">{children}</div>
-  );
+  return <div className="min-h-screen">{children}</div>;
 }
