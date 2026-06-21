@@ -11,3 +11,6 @@ dist
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# Runtime content store (edited via /admin)
+/data

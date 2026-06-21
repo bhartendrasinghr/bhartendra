@@ -1,8 +1,17 @@
-# This or That with Bhartendra
+# Eight Bridges — Krishnan Ranganathan
 
-Landing page for the podcast **This or That with Bhartendra** — *Beyond the noise*.
+Marketing site for **Eight Bridges**, the capital-markets and risk programmes
+designed and taught by Krishnan Ranganathan. Built with Next.js 14 (App Router)
+and a small file-backed CMS so all page content can be edited from a password
+protected admin, with no external database.
 
-Built with Next.js 14 (App Router) and Tailwind CSS. Episodes are pulled live from the [YouTube channel](https://www.youtube.com/@ThisOrThatPodcastIndia) via the public RSS feed, so the page stays up to date without manual edits.
+## Pages
+
+- **Home** (`/`) — hero, stats, about preview, the Eight Bridges grid, authority band, insights teaser, contact CTA.
+- **About** (`/about`) — profile narrative, career timeline, credentials, and a tabbed Speaking & Faculty record.
+- **Courses** (`/courses`) — the eight programmes plus a featured deep-dive (Bridge 3).
+- **Insights** (`/insights`) — featured piece plus a category-filterable grid.
+- **Contact** (`/contact`) — contact methods and a mailto-based enquiry form.
 
 ## Develop
 
@@ -13,31 +22,41 @@ npm run dev
 
 Open http://localhost:3000.
 
-## Build
+## Build & run
 
 ```bash
 npm run build
 npm start
 ```
 
-## Configuration
+## Admin
 
-The page resolves the YouTube channel ID automatically from the handle `@ThisOrThatPodcastIndia`. If you want to skip that lookup (e.g. for faster cold starts or stricter networks), set:
+Content is managed at **`/admin`**. Sign in with the admin password, edit any
+section across the six tabs (Site, Home, About, Courses, Insights, Contact),
+then **Save changes**. Saved content is written to `data/content.json` and the
+public pages render from it on the next request.
+
+Configure two environment variables (see `.env.example`):
 
 ```
-YOUTUBE_CHANNEL_ID=UC...
+ADMIN_PASSWORD=your-strong-password   # required to sign in
+ADMIN_SECRET=a-long-random-string     # signs the session cookie
 ```
 
-in a `.env.local` file. The ID can be found by visiting the channel page → View Source → search for `"channelId"`.
+If no content file exists yet, the site falls back to the built-in defaults in
+`lib/content.ts`, so the site always renders even before the first save.
 
-## Deploy
+### Deployment note
 
-Deploys cleanly to Vercel, Netlify, or any Node host that supports Next.js 14. The page uses ISR (`revalidate = 1800`), so the YouTube feed is refreshed at most every 30 minutes.
+The admin writes to the local filesystem (`data/content.json`), which works on
+any persistent Node host (a VPS, a container with a mounted volume, etc.). On
+read-only or ephemeral serverless filesystems (such as Vercel's), saves will not
+persist between requests — host on a platform with a writable, persistent disk,
+or swap `lib/content.ts` for a database-backed store.
 
-## Sections
+## Tech
 
-- **Hero** — tagline, latest episode card, channel CTA.
-- **This or That** — interactive warm-up that mirrors the show's format.
-- **Episodes** — auto-populated grid of the most recent uploads.
-- **About** — the host's bio and background.
-- **Subscribe** — platform links plus email signup (front-end only — wire it to your provider of choice in `components/Subscribe.tsx`).
+- Next.js 14 App Router, React 18, TypeScript
+- Tailwind plus a hand-written design system in `app/globals.css`
+- Fonts: Spectral, Hanken Grotesk, IBM Plex Mono (via `next/font`)
+- File-backed content store (`lib/content.ts`) with an HMAC-signed cookie session (`lib/auth.ts`)

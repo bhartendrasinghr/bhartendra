@@ -1,19 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  // Served as a GitHub project page at https://<user>.github.io/bhartendra/,
-  // so pages and assets must resolve under the /bhartendra base path.
-  basePath: "/bhartendra",
-  assetPrefix: "/bhartendra/",
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
-    remotePatterns: [
-      { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "yt3.ggpht.com" },
-      { protocol: "https", hostname: "img.youtube.com" }
-    ]
-  }
+  reactStrictMode: true,
 };
 
 export default nextConfig;
