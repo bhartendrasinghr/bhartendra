@@ -50,5 +50,31 @@ generated automatically.
 
 ## Deploy
 
-Deploys cleanly to Vercel, Netlify, or any Node host that supports Next.js 14.
-The essay pages are statically generated.
+This site is deployed on **Vercel**. Because it lives in a subfolder of the
+repository, the only non-default step is pointing Vercel at the right directory.
+
+### One-time setup
+
+1. In Vercel, **Add New → Project** and import the
+   `bhartendrasinghr/bhartendra` repository.
+2. Under **Root Directory**, click *Edit* and select **`khrishnanranganathan`**.
+   This is the important bit — it tells Vercel to build this app rather than the
+   podcast site at the repo root.
+3. Leave the rest as detected — Vercel recognises Next.js automatically:
+   - **Framework Preset:** Next.js
+   - **Build Command:** `next build` (default)
+   - **Install Command:** `npm install` (default)
+   - **Output:** managed by Vercel
+4. Add the production domain **`khrishnanranganathan.com`** (and `www`) under
+   **Settings → Domains**, then point the domain's DNS at Vercel
+   (an `A` record to Vercel's IP, or a `CNAME` to `cname.vercel-dns.com`).
+
+### Deploys
+
+Once connected, every push to `main` ships to production and every other branch
+(including this PR's branch) gets a preview URL automatically. No extra
+configuration files are needed; the essay pages are statically generated at
+build time.
+
+> The repo's existing `.github/workflows/nextjs.yml` deploys the **root**
+> podcast app to GitHub Pages and is unaffected by this project.
