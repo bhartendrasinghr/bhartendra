@@ -43,16 +43,31 @@ ADMIN_PASSWORD=your-strong-password   # required to sign in
 ADMIN_SECRET=a-long-random-string     # signs the session cookie
 ```
 
-If no content file exists yet, the site falls back to the built-in defaults in
-`lib/content.ts`, so the site always renders even before the first save.
+If no content has been saved yet, the site falls back to the built-in defaults
+in `lib/content.ts`, so it always renders even before the first save.
 
-### Deployment note
+## Content storage
 
-The admin writes to the local filesystem (`data/content.json`), which works on
-any persistent Node host (a VPS, a container with a mounted volume, etc.). On
-read-only or ephemeral serverless filesystems (such as Vercel's), saves will not
-persist between requests — host on a platform with a writable, persistent disk,
-or swap `lib/content.ts` for a database-backed store.
+The content store auto-selects its backend (`lib/content.ts`):
+
+- **Vercel Blob** when `BLOB_READ_WRITE_TOKEN` is set — content is read from and
+  written to a `content.json` blob. This is the production path on Vercel.
+- **Local file** (`data/content.json`) otherwise — used for local development
+  and for persistent Node hosts.
+
+## Deploy to Vercel
+
+1. Import the repo into Vercel (framework preset: **Next.js**, no extra config).
+2. In the project, go to **Storage → Create → Blob** and connect a Blob store.
+   Vercel injects `BLOB_READ_WRITE_TOKEN` automatically.
+3. Add the admin environment variables under **Settings → Environment Variables**:
+   - `ADMIN_PASSWORD` — the password for `/admin`
+   - `ADMIN_SECRET` — a long random string for signing the session cookie
+4. Redeploy. Visit `/admin`, sign in, and your edits now persist in Blob across
+   deployments and across all serverless instances.
+
+No `output: export` / static-export config is used, so the App Router server
+features (the admin API routes and dynamic content) run as Vercel Functions.
 
 ## Tech
 

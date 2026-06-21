@@ -402,27 +402,72 @@ export const DEFAULT_CONTENT: Content = {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const CONTENT_PATH = path.join(DATA_DIR, "content.json");
+const CONTENT_BLOB = "content.json";
+
+/**
+ * When a Blob token is present (e.g. on Vercel with a Blob store connected)
+ * content is read from / written to Vercel Blob. Otherwise it falls back to a
+ * local JSON file, which is handy for development and persistent Node hosts.
+ */
+function blobToken(): string | undefined {
+  return process.env.BLOB_READ_WRITE_TOKEN;
+}
+
+function mergeContent(parsed: Partial<Content>): Content {
+  // Shallow-merge each top-level section over the defaults so newly added
+  // fields keep working even if the stored content predates them.
+  return {
+    site: { ...DEFAULT_CONTENT.site, ...parsed.site },
+    home: { ...DEFAULT_CONTENT.home, ...parsed.home },
+    about: { ...DEFAULT_CONTENT.about, ...parsed.about },
+    courses: { ...DEFAULT_CONTENT.courses, ...parsed.courses },
+    insights: { ...DEFAULT_CONTENT.insights, ...parsed.insights },
+    contact: { ...DEFAULT_CONTENT.contact, ...parsed.contact },
+  };
+}
+
+async function readRaw(): Promise<Partial<Content> | null> {
+  const token = blobToken();
+  if (token) {
+    const { list } = await import("@vercel/blob");
+    const { blobs } = await list({ prefix: CONTENT_BLOB, token });
+    const found = blobs.find((b) => b.pathname === CONTENT_BLOB);
+    if (!found) return null;
+    const res = await fetch(found.url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as Partial<Content>;
+  }
+  try {
+    const raw = await fs.readFile(CONTENT_PATH, "utf-8");
+    return JSON.parse(raw) as Partial<Content>;
+  } catch {
+    return null;
+  }
+}
 
 export async function getContent(): Promise<Content> {
   try {
-    const raw = await fs.readFile(CONTENT_PATH, "utf-8");
-    const parsed = JSON.parse(raw) as Partial<Content>;
-    // Shallow-merge each top-level section over the defaults so newly
-    // added fields keep working even if the saved file predates them.
-    return {
-      site: { ...DEFAULT_CONTENT.site, ...parsed.site },
-      home: { ...DEFAULT_CONTENT.home, ...parsed.home },
-      about: { ...DEFAULT_CONTENT.about, ...parsed.about },
-      courses: { ...DEFAULT_CONTENT.courses, ...parsed.courses },
-      insights: { ...DEFAULT_CONTENT.insights, ...parsed.insights },
-      contact: { ...DEFAULT_CONTENT.contact, ...parsed.contact },
-    };
+    const parsed = await readRaw();
+    return parsed ? mergeContent(parsed) : DEFAULT_CONTENT;
   } catch {
     return DEFAULT_CONTENT;
   }
 }
 
 export async function saveContent(content: Content): Promise<void> {
+  const token = blobToken();
+  if (token) {
+    const { put } = await import("@vercel/blob");
+    await put(CONTENT_BLOB, JSON.stringify(content, null, 2), {
+      access: "public",
+      contentType: "application/json",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      token,
+    });
+    return;
+  }
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(CONTENT_PATH, JSON.stringify(content, null, 2), "utf-8");
 }
+
