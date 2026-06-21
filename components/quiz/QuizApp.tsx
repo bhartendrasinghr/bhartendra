@@ -171,16 +171,18 @@ export default function QuizApp() {
         {/* Header */}
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.22em] text-ember-400">
-            Class 8 · Geography &amp; Indian History
+            🌏 Fun Quiz Time
           </p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-ink-50 sm:text-5xl">
-            National Figures, Animals &amp; the World Around Us
+            India &amp; the World Quiz
           </h1>
           <p className="mt-4 text-ink-200">
-            10 questions · 4 choices each · India &amp; International. Score{" "}
+            10 questions about national figures, animals, places and history —
+            from India and around the world. Pick an answer for each, then hit
+            submit. Score{" "}
             <span className="text-ink-50 font-medium">{PASS_PERCENT}%</span> or
-            more to pass. You&apos;ll get the answers and an insight for every
-            question at the end.
+            more to pass, and you&apos;ll get a fun fact for every question. Good
+            luck! 🎉
           </p>
         </div>
 
@@ -315,11 +317,11 @@ export default function QuizApp() {
                   >
                     <p className="mb-1 text-[11px] uppercase tracking-wider text-ink-300">
                       {pick === q.answer
-                        ? "Correct"
+                        ? "Correct 🎉"
                         : pick === undefined
                           ? "Not answered"
                           : "Incorrect"}{" "}
-                      · Insight
+                      · Fun fact
                     </p>
                     <p className="text-ink-200">
                       <span className="text-ink-50 font-medium">

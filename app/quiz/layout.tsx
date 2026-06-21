@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Class 8 Quiz — Geography & Indian History",
+  title: "India & the World Quiz — A Fun 10-Question Challenge",
   description:
-    "A 10-question quiz on national figures, animals, geography and Indian history, covering India and the world. Scoring with 70% to pass, plus an insight for every question.",
+    "A fun 10-question quiz about national figures, animals, places and history from India and around the world. Score 70% to pass, with a fun fact for every question.",
 };
 
 export default function QuizLayout({
