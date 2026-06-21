@@ -19,9 +19,12 @@ Open http://localhost:3000.
 
 ## Build
 
+The site is a fully static export (`output: "export"`), so a build produces a
+self-contained `out/` folder that can be hosted anywhere.
+
 ```bash
-npm run build
-npm start
+npm run build      # generates ./out
+npm run preview    # serves ./out locally for a production preview
 ```
 
 ## Editing content
@@ -78,3 +81,14 @@ build time.
 
 > The repo's existing `.github/workflows/nextjs.yml` deploys the **root**
 > podcast app to GitHub Pages and is unaffected by this project.
+
+### Quick client preview (no git needed)
+
+Because the build is a static `out/` folder, you can get a shareable link in
+under a minute without connecting the repository:
+
+1. Run `npm run build` to produce `out/`.
+2. Drag the `out/` folder onto **[Vercel Drop](https://vercel.com/new)** or
+   **[Netlify Drop](https://app.netlify.com/drop)**.
+3. You get an instant public URL (e.g. `something.vercel.app`) to send the
+   client — no domain or DNS required.
