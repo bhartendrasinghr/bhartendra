@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background: #fbfaf6;
+  color: #11132b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: #b8923e;
+  color: #fbfaf6;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-brass-600;
+  }
+}
+
+@layer components {
+  /* Editorial prose for blog posts */
+  .prose-essay {
+    @apply text-lg leading-[1.8] text-ink-700;
+  }
+  .prose-essay p {
+    @apply mb-6;
+  }
+  .prose-essay h2 {
+    @apply mt-12 mb-4 font-display text-2xl font-semibold text-ink-900;
+  }
+  .prose-essay h3 {
+    @apply mt-8 mb-3 font-display text-xl font-semibold text-ink-900;
+  }
+  .prose-essay blockquote {
+    @apply my-8 border-l-2 border-brass-500 pl-6 font-display text-xl italic text-ink-800;
+  }
+  .prose-essay ul {
+    @apply mb-6 ml-5 list-disc space-y-2 marker:text-brass-500;
+  }
+  .prose-essay strong {
+    @apply font-semibold text-ink-900;
+  }
+}
